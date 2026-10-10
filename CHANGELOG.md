@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.2 (2026-10-10)
 
 - The clock looks like the browser version: the level, the countdown and the blinds, and a footer with the next
   level, the next break and a stat in the middle that changes every 12 seconds (levels, players, average stack,
