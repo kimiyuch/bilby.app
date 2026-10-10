@@ -9,7 +9,8 @@ import AppKit
 enum DebugRemote {
     static let name = Notification.Name("ch.kimiyu.Bilby.debug")
 
-    static func install(store: TournamentStore, selectTab: @escaping @MainActor @Sendable (String) -> Void) {
+    static func install(store: TournamentStore, selectTab: @escaping @MainActor @Sendable (String) -> Void,
+                        openSettings: @escaping @MainActor @Sendable () -> Void) {
         DistributedNotificationCenter.default().addObserver(forName: name, object: nil, queue: .main) { note in
             let command = note.object as? String ?? ""
             let argument = note.userInfo?["argument"] as? String
@@ -27,6 +28,8 @@ enum DebugRemote {
                 case "rebuy": store.updatePrizePool { $0.addRebuy() }
                 case "addon": store.updatePrizePool { $0.addAddOn() }
                 case "knockout": store.updatePrizePool { $0.eliminate() }
+                case "warning": store.settings.warningSeconds = Int(argument ?? "") ?? 60
+                case "settings": openSettings()
                 case let c where c.hasPrefix("tab:"): selectTab(String(c.dropFirst(4)))
                 default: break
                 }

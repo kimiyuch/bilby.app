@@ -172,11 +172,11 @@ struct ClockView: View {
 /// The clock face, redrawn several times a second from the store.
 struct LiveClockView: View {
     @Environment(TournamentStore.self) private var store
-    var warning: TimeInterval = 60
 
     var body: some View {
         TimelineView(.periodic(from: .now, by: 0.2)) { context in
-            ClockView(snapshot: store.snapshot(at: context.date), structureName: store.structure.name, warning: warning,
+            ClockView(snapshot: store.snapshot(at: context.date), structureName: store.structure.name,
+                      warning: store.settings.warning,
                       pool: store.tournament.prizePool)
         }
     }

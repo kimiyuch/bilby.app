@@ -79,6 +79,7 @@ import Testing
         #expect(Announcement.roundStarted(4, in: s) == "Break. 10 minutes.")
         #expect(Announcement.warning(s.rounds[0], remaining: 60) == "One minute left in this level.")
         #expect(Announcement.warning(s.rounds[4], remaining: 120) == "2 minutes left in the break.")
+        #expect(Announcement.warning(s.rounds[0], remaining: 30) == "30 seconds left in this level.")
     }
 }
 

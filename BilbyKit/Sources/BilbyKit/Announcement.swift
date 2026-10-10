@@ -20,7 +20,8 @@ public enum Announcement {
     }
 
     public static func warning(_ round: Round, remaining: TimeInterval) -> String {
-        let left = minutes(Int((remaining / 60).rounded()))
+        let seconds = Int(remaining.rounded())
+        let left = seconds < 60 ? "\(seconds) seconds" : minutes(Int((remaining / 60).rounded()))
         return round.isBreak ? "\(left) left in the break." : "\(left) left in this level."
     }
 

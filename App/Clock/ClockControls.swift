@@ -34,6 +34,13 @@ struct ClockControls: View {
             Button("Next Level", systemImage: "forward.end.fill", action: store.next)
                 .keyboardShortcut(.rightArrow, modifiers: [])
                 .help("Next level (→)")
+            Button(store.settings.muted ? "Unmute" : "Mute",
+                   systemImage: store.settings.muted ? "speaker.slash.fill" : "speaker.wave.2.fill") {
+                store.settings.muted.toggle()
+            }
+            .keyboardShortcut("m", modifiers: [])
+            .help(store.settings.muted ? "Sounds are off (M)" : "Sounds are on (M)")
+            .padding(.leading, 12)
         }
         .buttonStyle(.glass)
         .controlSize(.large)

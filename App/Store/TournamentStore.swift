@@ -8,6 +8,9 @@ import Observation
 final class TournamentStore {
     private(set) var tournament: Tournament
     private(set) var library: [Structure]
+    var settings: AppSettings {
+        didSet { if settings != oldValue { persistence.save(settings, to: "settings.json") } }
+    }
     /// Advances about once a second, for views that show the time but don't run their own TimelineView.
     private(set) var now = Date.now
 
@@ -22,6 +25,7 @@ final class TournamentStore {
         self.persistence = persistence
         tournament = persistence.load(Tournament.self, from: "tournament.json") ?? Tournament(structure: Presets.standard)
         library = persistence.load([Structure].self, from: "structures.json") ?? []
+        settings = persistence.load(AppSettings.self, from: "settings.json") ?? AppSettings()
         ticker = Task { [weak self] in
             while !Task.isCancelled {
                 try? await Task.sleep(for: .milliseconds(250))
@@ -107,14 +111,11 @@ final class TournamentStore {
         defer { lastTick = date }
         if Int(date.timeIntervalSinceReferenceDate) != Int(now.timeIntervalSinceReferenceDate) { now = date }
         guard date > lastTick, let onEvent else { return }
-        let due = tournament.clock.upcomingEvents(in: tournament.structure, at: lastTick, warning: warningLead)
+        let due = tournament.clock.upcomingEvents(in: tournament.structure, at: lastTick, warning: settings.warning)
             .prefix { $0.date <= date }
         // After sleep, don't replay a pile of old alerts; only the ones that just happened.
         for event in due where date.timeIntervalSince(event.date) < 5 {
             onEvent(event)
         }
     }
-
-    /// How long before the end of a round the warning comes. Settings will make this configurable.
-    var warningLead: TimeInterval = 60
 }
