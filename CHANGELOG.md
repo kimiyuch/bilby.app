@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.3 (2026-10-10)
+
+- The countdown moves on evenly: each second now stays on screen for a full second, instead of some seconds
+  looking shorter than others.
+
 ## 0.1.2 (2026-10-10)
 
 - The clock looks like the browser version: the level, the countdown and the blinds, and a footer with the next

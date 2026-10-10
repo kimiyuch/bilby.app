@@ -257,17 +257,15 @@ struct ClockView: View {
     }
 }
 
-/// The clock face, redrawn several times a second from the store.
+/// The clock face, redrawn each time the store ticks.
 struct LiveClockView: View {
     @Environment(TournamentStore.self) private var store
     /// Shows a full screen button in the corner of the clock.
     var fullScreen: (() -> Void)?
 
     var body: some View {
-        TimelineView(.periodic(from: .now, by: 0.2)) { context in
-            ClockView(snapshot: store.snapshot(at: context.date), levelCount: store.structure.levelCount,
-                      warning: store.settings.warning,
-                      pool: store.tournament.prizePool, now: context.date, fullScreen: fullScreen)
-        }
+        ClockView(snapshot: store.snapshot(at: store.now), levelCount: store.structure.levelCount,
+                  warning: store.settings.warning,
+                  pool: store.tournament.prizePool, now: store.now, fullScreen: fullScreen)
     }
 }

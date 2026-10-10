@@ -15,7 +15,7 @@ final class TournamentStore {
             for observer in observers { observer(self) }
         }
     }
-    /// Advances about once a second, for views that show the time but don't run their own TimelineView.
+    /// Advances each time the clock's display changes; views compute what they show from it.
     private(set) var now = Date.now
 
     /// Whether the clock is running right now (it stops by itself after the last level).
@@ -37,12 +37,7 @@ final class TournamentStore {
         library = persistence.load([Structure].self, from: "structures.json") ?? []
         settings = persistence.load(AppSettings.self, from: "settings.json") ?? AppSettings()
         isRunning = tournament.clock.caughtUp(in: tournament.structure, at: .now).isRunning
-        ticker = Task { [weak self] in
-            while !Task.isCancelled {
-                try? await Task.sleep(for: .milliseconds(250))
-                self?.tick()
-            }
-        }
+        startTicking()
     }
 
     var structure: Structure { tournament.structure }
@@ -123,6 +118,7 @@ final class TournamentStore {
         lastTick = date
         persistence.save(tournament, to: "tournament.json")
         changed(at: date)
+        startTicking()
     }
 
     private func changed(at date: Date) {
@@ -132,9 +128,30 @@ final class TournamentStore {
         for observer in observers { observer(self) }
     }
 
+    /// Ticks each time the countdown reaches its next second, so every second stays on screen equally long.
+    private func startTicking() {
+        ticker?.cancel()
+        ticker = Task { [weak self] in
+            while !Task.isCancelled, let delay = self?.untilNextSecond() {
+                try? await Task.sleep(for: delay, tolerance: .milliseconds(5))
+                guard !Task.isCancelled else { return }
+                self?.tick()
+            }
+        }
+    }
+
+    /// Time until the display next changes: the countdown's next second while the clock runs, the next second of
+    /// the time of day while it's paused. A little late rather than early, so the new second is there.
+    private func untilNextSecond(after date: Date = .now) -> Duration {
+        let clock = tournament.clock.caughtUp(in: tournament.structure, at: date)
+        let toward = clock.isRunning ? clock.remaining(at: date) : -date.timeIntervalSinceReferenceDate
+        let left = toward - toward.rounded(.down)
+        return .milliseconds(Int(((left == 0 ? 1 : left) * 1000).rounded()) + 15)
+    }
+
     private func tick(at date: Date = .now) {
         defer { lastTick = date }
-        if Int(date.timeIntervalSinceReferenceDate) != Int(now.timeIntervalSinceReferenceDate) { now = date }
+        now = date
         let clock = tournament.clock.caughtUp(in: tournament.structure, at: date)
         if clock.roundIndex != lastRoundIndex || clock.isRunning != isRunning { changed(at: date) }
         guard date > lastTick, let onEvent else { return }
