@@ -99,6 +99,12 @@ final class SoundPlayer {
 
     private func buffer(for chime: Chime) -> AVAudioPCMBuffer? {
         if let cached = buffers[chime] { return cached }
+        let buffer = Self.render(chime, format: format)
+        buffers[chime] = buffer
+        return buffer
+    }
+
+    static func render(_ chime: Chime, format: AVAudioFormat) -> AVAudioPCMBuffer? {
         let rate = format.sampleRate
         let (partials, decay) = chime.timbre
         let length = (chime.notes.map(\.1).max() ?? 0) + decay * 5
@@ -126,7 +132,32 @@ final class SoundPlayer {
         if peak > 0 {
             for i in 0..<Int(frames) { samples[i] *= 0.6 / peak }
         }
-        buffers[chime] = buffer
         return buffer
     }
 }
+
+#if os(iOS)
+import UserNotifications
+
+/// The chimes as sound files in Library/Sounds, where notifications can play them.
+enum SoundFiles {
+    static func notificationSound(for chime: Chime) -> UNNotificationSound? {
+        guard chime != .none else { return nil }
+        let name = "bilby-\(chime.rawValue).caf"
+        let directory = URL.libraryDirectory.appending(path: "Sounds", directoryHint: .isDirectory)
+        let url = directory.appending(path: name)
+        if !FileManager.default.fileExists(atPath: url.path) {
+            let format = AVAudioFormat(standardFormatWithSampleRate: 44_100, channels: 1)!
+            guard let buffer = SoundPlayer.render(chime, format: format) else { return nil }
+            do {
+                try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+                let file = try AVAudioFile(forWriting: url, settings: format.settings)
+                try file.write(from: buffer)
+            } catch {
+                return nil
+            }
+        }
+        return UNNotificationSound(named: UNNotificationSoundName(name))
+    }
+}
+#endif

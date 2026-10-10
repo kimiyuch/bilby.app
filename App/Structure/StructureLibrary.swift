@@ -33,7 +33,9 @@ struct StructureLibrary: View {
                 Text("The clock goes back to level 1.")
             }
         }
+        #if os(macOS)
         .frame(minWidth: 420, minHeight: 440)
+        #endif
     }
 
     private func row(_ structure: Structure, deletable: Bool) -> some View {

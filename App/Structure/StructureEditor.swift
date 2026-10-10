@@ -10,6 +10,12 @@ struct StructureEditor: View {
     @State private var importing = false
     @State private var exporting = false
     @State private var importError: String?
+    #if os(iOS)
+    @Environment(\.horizontalSizeClass) private var sizeClass
+    private var compact: Bool { sizeClass == .compact }
+    #else
+    private let compact = false
+    #endif
 
     private var structure: Binding<Structure> {
         Binding(get: { store.structure }, set: { store.setStructure($0) })
@@ -20,8 +26,8 @@ struct StructureEditor: View {
         List {
             Section {
                 ForEach(Array(store.structure.rounds.enumerated()), id: \.element.id) { index, round in
-                    RoundRow(round: binding(for: round.id), levelNumber: store.structure.levelNumber(at: index),
-                             isCurrent: index == current && store.tournament.clock.hasStarted)
+                    row(binding(for: round.id), levelNumber: store.structure.levelNumber(at: index),
+                        isCurrent: index == current && store.tournament.clock.hasStarted)
                         .contextMenu {
                             Button("Play From Here") { store.jump(to: index) }
                             Divider()
@@ -92,12 +98,27 @@ struct StructureEditor: View {
             })
     }
 
+    @ViewBuilder
+    private func row(_ round: Binding<Round>, levelNumber: Int?, isCurrent: Bool) -> some View {
+        if compact {
+            NavigationLink {
+                RoundForm(round: round, levelNumber: levelNumber)
+            } label: {
+                CompactRoundRow(round: round.wrappedValue, levelNumber: levelNumber, isCurrent: isCurrent)
+            }
+        } else {
+            RoundRow(round: round, levelNumber: levelNumber, isCurrent: isCurrent)
+        }
+    }
+
     private var header: some View {
         VStack(alignment: .leading, spacing: 10) {
             TextField("Name", text: structure.name)
                 .font(.title2.weight(.semibold))
                 .textFieldStyle(.plain)
-            RoundRow.columnTitles
+                .textCase(nil)
+                .foregroundStyle(.primary)
+            if !compact { RoundRow.columnTitles }
         }
         .padding(.bottom, 4)
     }
@@ -170,7 +191,7 @@ struct RoundRow: View {
                 amount($round.bigBlind)
                 amount($round.ante)
                 Picker("Ante style", selection: $round.anteStyle) {
-                    Text("Big blind ante").tag(AnteStyle.bigBlind)
+                    Text("BB ante").tag(AnteStyle.bigBlind)
                     Text("Everyone").tag(AnteStyle.everyone)
                 }
                 .labelsHidden()
@@ -190,6 +211,84 @@ struct RoundRow: View {
         TextField("", value: value, format: .number)
             .multilineTextAlignment(.trailing)
             .frame(width: Self.amountWidth)
+    }
+}
+
+/// One line per round on a narrow screen; tapping it opens `RoundForm`.
+struct CompactRoundRow: View {
+    var round: Round
+    var levelNumber: Int?
+    var isCurrent: Bool
+
+    var body: some View {
+        HStack {
+            Image(systemName: "play.fill")
+                .font(.caption2)
+                .foregroundStyle(.tint)
+                .opacity(isCurrent ? 1 : 0)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(levelNumber.map { "Level \($0)" } ?? "Break")
+                    .foregroundStyle(round.isBreak ? .secondary : .primary)
+                if round.isBreak, !round.note.isEmpty {
+                    Text(round.note).font(.caption).foregroundStyle(.secondary)
+                }
+            }
+            Spacer()
+            if !round.isBreak {
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text(round.blindsText)
+                    if let ante = round.anteText {
+                        Text(ante).font(.caption).foregroundStyle(.secondary)
+                    }
+                }
+            }
+            Text("\(round.minutes) min")
+                .foregroundStyle(.secondary)
+                .frame(minWidth: 56, alignment: .trailing)
+        }
+        .monospacedDigit()
+    }
+}
+
+/// Edits one round on a narrow screen.
+struct RoundForm: View {
+    @Binding var round: Round
+    var levelNumber: Int?
+
+    var body: some View {
+        Form {
+            if round.isBreak {
+                Section {
+                    Stepper("\(round.minutes) minutes", value: $round.minutes, in: 1...240)
+                    TextField("Note, e.g. color up the 25s", text: $round.note)
+                }
+            } else {
+                Section("Blinds") {
+                    LabeledContent("Small blind") { amount($round.smallBlind) }
+                    LabeledContent("Big blind") { amount($round.bigBlind) }
+                }
+                Section("Ante") {
+                    LabeledContent("Ante") { amount($round.ante) }
+                    Picker("Paid by", selection: $round.anteStyle) {
+                        Text("Big blind").tag(AnteStyle.bigBlind)
+                        Text("Everyone").tag(AnteStyle.everyone)
+                    }
+                    .disabled(round.ante == 0)
+                }
+                Section {
+                    Stepper("\(round.minutes) minutes", value: $round.minutes, in: 1...240)
+                }
+            }
+        }
+        .navigationTitle(levelNumber.map { "Level \($0)" } ?? "Break")
+    }
+
+    private func amount(_ value: Binding<Int>) -> some View {
+        TextField("0", value: value, format: .number)
+            .multilineTextAlignment(.trailing)
+            #if os(iOS)
+            .keyboardType(.numberPad)
+            #endif
     }
 }
 

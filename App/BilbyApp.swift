@@ -7,6 +7,8 @@ struct BilbyApp: App {
     @State private var alerts: Alerts
     #if os(macOS)
     private let displayAwake = DisplayAwake()
+    #else
+    private let extras: IOSExtras
     #endif
 
     init() {
@@ -16,6 +18,8 @@ struct BilbyApp: App {
         #if os(macOS)
         let awake = displayAwake
         store.observe { awake.set($0.isRunning) }
+        #else
+        extras = IOSExtras(store: store)
         #endif
     }
 
@@ -64,7 +68,7 @@ struct BilbyApp: App {
 }
 
 struct ContentView: View {
-    enum Section: String { case clock, structure, players }
+    enum Section: String { case clock, structure, players, settings }
 
     @Environment(TournamentStore.self) private var store
     @State private var section = Section.clock
@@ -82,12 +86,22 @@ struct ContentView: View {
             Tab("Players", systemImage: "person.3", value: .players) {
                 NavigationStack { PlayersView() }
             }
+            #if os(iOS)
+            Tab("Settings", systemImage: "gearshape", value: .settings) {
+                NavigationStack { SoundSettings().navigationTitle("Settings") }
+            }
+            #endif
         }
         #if DEBUG && os(macOS)
         .task {
             let openSettings = openSettings, openWindow = openWindow
             DebugRemote.install(store: store, selectTab: { section = Section(rawValue: $0) ?? section },
                                 openSettings: { openSettings() }, openWindow: { openWindow(id: $0) })
+        }
+        #elseif DEBUG
+        .task {
+            DebugRemote.install(store: store, selectTab: { section = Section(rawValue: $0) ?? section },
+                                fullScreen: { NotificationCenter.default.post(name: .bilbyFullScreen, object: nil) })
         }
         #endif
     }
@@ -97,15 +111,28 @@ struct ContentView: View {
 struct ClockScreen: View {
     #if os(macOS)
     @Environment(\.openWindow) private var openWindow
+    #else
+    @State private var fullScreen = false
     #endif
 
     var body: some View {
         VStack(spacing: 16) {
             LiveClockView()
                 .clipShape(.rect(cornerRadius: 18))
+                #if os(iOS)
+                .onTapGesture { fullScreen = true }
+                .accessibilityAction(named: "Full Screen") { fullScreen = true }
+                #endif
             ClockControls()
         }
+        #if os(macOS)
         .padding(20)
+        #else
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .fullScreenCover(isPresented: $fullScreen) { FullScreenClock() }
+        .onReceive(NotificationCenter.default.publisher(for: .bilbyFullScreen)) { _ in fullScreen.toggle() }
+        #endif
         #if os(macOS)
         .toolbar {
             ToolbarItem {
@@ -124,4 +151,9 @@ struct ClockScreen: View {
         }
         #endif
     }
+}
+
+extension Notification.Name {
+    /// Debug builds use this to open and close the full screen clock.
+    static let bilbyFullScreen = Notification.Name("ch.kimiyu.Bilby.fullScreen")
 }

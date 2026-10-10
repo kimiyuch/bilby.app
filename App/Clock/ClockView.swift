@@ -19,13 +19,13 @@ struct ClockView: View {
             let compact = size.height > size.width * 1.1
 
             VStack(spacing: unit * (compact ? 3 : 1.6)) {
-                header(theme, unit: unit)
+                header(theme, unit: compact ? size.width / 80 : unit)
                 Spacer(minLength: 0)
                 countdown(theme, unit: compact ? size.width / 62 : unit)
                 blinds(theme, unit: compact ? size.width / 80 : unit)
                 progress(theme, unit: unit)
                 Spacer(minLength: 0)
-                footer(theme, unit: compact ? size.width / 90 : unit, stacked: compact)
+                footer(theme, unit: compact ? size.width / 66 : unit, stacked: compact)
             }
             .padding(.horizontal, unit * 5)
             .padding(.vertical, unit * 4)
