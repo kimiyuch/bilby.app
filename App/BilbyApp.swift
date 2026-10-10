@@ -34,6 +34,9 @@ struct ContentView: View {
             Tab("Structure", systemImage: "list.number", value: .structure) {
                 NavigationStack { StructureEditor() }
             }
+            Tab("Players", systemImage: "person.3", value: .players) {
+                NavigationStack { PlayersView() }
+            }
         }
         #if DEBUG && os(macOS)
         .task { DebugRemote.install(store: store) { section = Section(rawValue: $0) ?? section } }

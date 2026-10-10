@@ -1,13 +1,24 @@
 import Foundation
 
-/// The tournament being played: its structure and the clock running through it.
+/// The tournament being played: its structure, the clock running through it, and the money.
 public struct Tournament: Codable, Equatable, Sendable {
     public private(set) var structure: Structure
     public var clock: Clock
+    public var prizePool: PrizePool
 
-    public init(structure: Structure) {
+    public init(structure: Structure, prizePool: PrizePool = PrizePool()) {
         self.structure = structure
         clock = Clock(structure: structure)
+        self.prizePool = prizePool
+    }
+
+    private enum CodingKeys: String, CodingKey { case structure, clock, prizePool }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        structure = try c.decode(Structure.self, forKey: .structure)
+        clock = try c.decode(Clock.self, forKey: .clock)
+        prizePool = try c.decodeIfPresent(PrizePool.self, forKey: .prizePool) ?? PrizePool()
     }
 
     /// Edits the structure while keeping the clock on the same round.

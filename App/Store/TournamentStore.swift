@@ -46,6 +46,24 @@ final class TournamentStore {
     func jump(to index: Int) { change { $0.clock.jump(to: index, in: $0.structure, at: $1) } }
     func resetClock() { change { t, _ in t.clock.reset(structure: t.structure) } }
 
+    /// Back to level 1 with all counters at zero; the structure and buy-ins stay.
+    func newTournament() {
+        change { t, _ in
+            t.clock.reset(structure: t.structure)
+            t.prizePool.resetCounters()
+        }
+    }
+
+    // MARK: Players and prize pool
+
+    func setPrizePool(_ pool: PrizePool) {
+        change { t, _ in t.prizePool = pool }
+    }
+
+    func updatePrizePool(_ body: (inout PrizePool) -> Void) {
+        change { t, _ in body(&t.prizePool) }
+    }
+
     // MARK: Structures
 
     /// Edits the structure in play; the clock stays on its round.

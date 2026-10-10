@@ -7,6 +7,8 @@ struct ClockView: View {
     var snapshot: ClockSnapshot
     var structureName: String
     var warning: TimeInterval
+    /// Shown in a second footer row once players have entered.
+    var pool: PrizePool?
 
     var body: some View {
         GeometryReader { geo in
@@ -121,30 +123,40 @@ struct ClockView: View {
         .padding(.top, unit)
     }
 
-    @ViewBuilder
     private func footer(_ theme: ClockTheme, unit: CGFloat, stacked: Bool) -> some View {
-        let items = [
+        var items = [
             ("NEXT", nextText),
             ("NEXT BREAK", snapshot.untilNextBreak.map(TimeFormat.countdown) ?? "–"),
             ("ELAPSED", TimeFormat.elapsed(snapshot.elapsed)),
         ]
-        let layout = stacked ? AnyLayout(VStackLayout(alignment: .leading, spacing: unit * 2))
-                             : AnyLayout(HStackLayout(alignment: .top, spacing: unit * 3))
-        layout {
-            ForEach(items, id: \.0) { label, value in
-                VStack(alignment: .leading, spacing: unit * 0.5) {
-                    Text(label)
-                        .font(.system(size: unit * 1.9, weight: .semibold))
-                        .tracking(unit * 0.2)
-                        .foregroundStyle(theme.secondary)
-                    Text(value)
-                        .font(.system(size: unit * 3.8, weight: .medium))
-                        .monospacedDigit()
-                        .foregroundStyle(theme.primary)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.6)
+        if let pool, pool.entries > 0 {
+            items += [
+                ("PLAYERS", "\(pool.playersLeft) / \(pool.entries)"),
+                ("AVERAGE STACK", pool.averageStack?.chips ?? "–"),
+                ("PRIZE POOL", Money.format(pool.total, pool.currency)),
+            ]
+        }
+        let columns = stacked ? 2 : 3
+        let rows = stride(from: 0, to: items.count, by: columns).map { Array(items[$0..<min($0 + columns, items.count)]) }
+        return Grid(alignment: .leading, horizontalSpacing: unit * 3, verticalSpacing: unit * 2.2) {
+            ForEach(rows.indices, id: \.self) { r in
+                GridRow {
+                    ForEach(rows[r], id: \.0) { label, value in
+                        VStack(alignment: .leading, spacing: unit * 0.5) {
+                            Text(label)
+                                .font(.system(size: unit * 1.9, weight: .semibold))
+                                .tracking(unit * 0.2)
+                                .foregroundStyle(theme.secondary)
+                            Text(value)
+                                .font(.system(size: unit * 3.8, weight: .medium))
+                                .monospacedDigit()
+                                .foregroundStyle(theme.primary)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.6)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
                 }
-                .frame(maxWidth: stacked ? nil : .infinity, alignment: .leading)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -164,7 +176,8 @@ struct LiveClockView: View {
 
     var body: some View {
         TimelineView(.periodic(from: .now, by: 0.2)) { context in
-            ClockView(snapshot: store.snapshot(at: context.date), structureName: store.structure.name, warning: warning)
+            ClockView(snapshot: store.snapshot(at: context.date), structureName: store.structure.name, warning: warning,
+                      pool: store.tournament.prizePool)
         }
     }
 }

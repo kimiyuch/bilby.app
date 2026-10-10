@@ -23,6 +23,10 @@ enum DebugRemote {
                 case "minus": store.adjust(minutes: -1)
                 case "restart": store.restartRound()
                 case "reset": store.resetClock()
+                case "entry": store.updatePrizePool { $0.addEntry() }
+                case "rebuy": store.updatePrizePool { $0.addRebuy() }
+                case "addon": store.updatePrizePool { $0.addAddOn() }
+                case "knockout": store.updatePrizePool { $0.eliminate() }
                 case let c where c.hasPrefix("tab:"): selectTab(String(c.dropFirst(4)))
                 default: break
                 }
