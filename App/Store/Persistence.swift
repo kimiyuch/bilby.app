@@ -1,11 +1,16 @@
 import Foundation
 import os
 
-/// Small JSON files in Application Support/Bilby.
+/// Small JSON files in Application Support/Bilby. Debug builds use Application Support/Bilby Debug, so testing
+/// never touches the tournament of the installed app.
 struct Persistence {
     let directory: URL
 
+    #if DEBUG
+    static let standard = Persistence(directory: URL.applicationSupportDirectory.appending(path: "Bilby Debug", directoryHint: .isDirectory))
+    #else
     static let standard = Persistence(directory: URL.applicationSupportDirectory.appending(path: "Bilby", directoryHint: .isDirectory))
+    #endif
 
     private static let log = Logger(subsystem: "ch.kimiyu.Bilby", category: "persistence")
 

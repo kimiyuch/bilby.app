@@ -12,8 +12,10 @@ APP=build/Bilby.app
 
 ./scripts/fetch-sparkle.sh
 "$XCODEGEN" generate --quiet
+# -quiet still prints "error: the following command failed with exit code 0…" on success; drop that line.
 xcodebuild -project Bilby.xcodeproj -scheme Bilby -configuration Release \
-  -destination 'platform=macOS,arch=arm64' -derivedDataPath build/DerivedData -quiet build
+  -destination 'platform=macOS,arch=arm64' -derivedDataPath build/DerivedData -quiet build 2>&1 \
+  | { grep -v 'failed with exit code 0 but produced no further output' || true; }
 
 rm -rf "$APP"
 ditto build/DerivedData/Build/Products/Release/Bilby.app "$APP"

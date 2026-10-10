@@ -1,6 +1,7 @@
 import BilbyKit
 import Foundation
 import Observation
+import os
 
 /// The app's state: the tournament in play and the saved structures. Every change is written to disk
 /// straight away, so a running tournament carries on after a relaunch.
@@ -30,6 +31,9 @@ final class TournamentStore {
     @ObservationIgnored private let persistence: Persistence
     @ObservationIgnored private var lastTick = Date.now
     @ObservationIgnored private var ticker: Task<Void, Never>?
+    #if DEBUG
+    private static let tickLog = Logger(subsystem: "ch.kimiyu.Bilby", category: "ticks")
+    #endif
 
     init(persistence: Persistence = .standard) {
         self.persistence = persistence
@@ -132,7 +136,7 @@ final class TournamentStore {
     private func startTicking() {
         ticker?.cancel()
         ticker = Task { [weak self] in
-            while !Task.isCancelled, let delay = self?.untilNextSecond() {
+            while !Task.isCancelled, let delay = self?.untilNextTick() {
                 try? await Task.sleep(for: delay, tolerance: .milliseconds(5))
                 guard !Task.isCancelled else { return }
                 self?.tick()
@@ -140,17 +144,19 @@ final class TournamentStore {
         }
     }
 
-    /// Time until the display next changes: the countdown's next second while the clock runs, the next second of
-    /// the time of day while it's paused. A little late rather than early, so the new second is there.
-    private func untilNextSecond(after date: Date = .now) -> Duration {
-        let clock = tournament.clock.caughtUp(in: tournament.structure, at: date)
-        let toward = clock.isRunning ? clock.remaining(at: date) : -date.timeIntervalSinceReferenceDate
-        let left = toward - toward.rounded(.down)
-        return .milliseconds(Int(((left == 0 ? 1 : left) * 1000).rounded()) + 15)
+    /// Time until the display next changes; a little late rather than early, so it has.
+    private func untilNextTick() -> Duration {
+        let date = Date.now
+        let next = tournament.clock.nextSecond(in: tournament.structure, after: date)
+        return .milliseconds(Int((next.timeIntervalSince(date) * 1000).rounded()) + 15)
     }
 
     private func tick(at date: Date = .now) {
         defer { lastTick = date }
+        #if DEBUG
+        // Shows how evenly the clock ticks: log show --predicate 'subsystem == "ch.kimiyu.Bilby" && category == "ticks"' --info
+        Self.tickLog.info("tick \(date.timeIntervalSince1970, format: .fixed(precision: 3))")
+        #endif
         now = date
         let clock = tournament.clock.caughtUp(in: tournament.structure, at: date)
         if clock.roundIndex != lastRoundIndex || clock.isRunning != isRunning { changed(at: date) }

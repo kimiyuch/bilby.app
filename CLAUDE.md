@@ -11,3 +11,8 @@ The five default labels: needs-triage, needs-info, ready-for-agent, ready-for-hu
 ### Domain docs
 
 Single-context: `CONTEXT.md` and `docs/adr/` at the repo root, created when they're first needed. See `docs/agents/domain.md`.
+
+## Notes
+
+Debug remote, simulators, signing and releasing: see `SESSION.md` (private, not in git). After testing in the
+simulators or the Mac debug app, run `scripts/pause-clocks.sh`. Reviews check changes against `CODING_STANDARDS.md`.

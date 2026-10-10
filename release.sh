@@ -23,6 +23,9 @@ if [[ $PUBLISH == 1 ]]; then
   gh auth status >/dev/null 2>&1 || { echo "GitHub CLI isn't logged in: run 'gh auth login'."; exit 1; }
 fi
 
+echo "Running BilbyKit tests"
+swift test --package-path BilbyKit --quiet
+
 # Sparkle compares CFBundleVersion, so it has to go up with every release. The versions live in
 # project.yml, shared by the app and its widget extension.
 BUILD=$(( $(sed -n 's/^ *CURRENT_PROJECT_VERSION: "\([0-9]*\)"/\1/p' project.yml) + 1 ))

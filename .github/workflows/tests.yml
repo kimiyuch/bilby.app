@@ -1,0 +1,14 @@
+name: Tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  bilbykit:
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: BilbyKit tests
+        run: swift test --package-path BilbyKit

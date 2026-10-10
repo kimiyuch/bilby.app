@@ -4,7 +4,7 @@ import AppKit
 /// Debug builds only: lets scripts drive the app and capture its windows without screen recording permission.
 ///
 ///   swift scripts/debug-remote.swift snapshot /tmp/shots   # PNG of every visible window
-///   swift scripts/debug-remote.swift toggle | next | previous | plus | minus | restart | reset
+///   swift scripts/debug-remote.swift toggle | pause | next | previous | plus | minus | restart | reset
 ///   swift scripts/debug-remote.swift tab:clock | tab:structure | tab:players
 enum DebugRemote {
     static let name = Notification.Name("ch.kimiyu.Bilby.debug")
@@ -22,6 +22,7 @@ enum DebugRemote {
                     NSApp.activate()
                     NSApp.windows.first { $0.isVisible && $0.canBecomeMain }?.makeKeyAndOrderFront(nil)
                 case "toggle": store.toggle()
+                case "pause": if store.isRunning { store.toggle() }
                 case "next": store.next()
                 case "previous": store.previous()
                 case "plus": store.adjust(minutes: 1)

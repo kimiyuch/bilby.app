@@ -35,6 +35,19 @@ private func at(_ seconds: TimeInterval) -> Date { t0.addingTimeInterval(seconds
         #expect(s.elapsed == 90)
     }
 
+    @Test func nextSecondFollowsTheCountdown() {
+        var clock = Clock(structure: structure)
+        clock.start(in: structure, at: at(0.4))
+        #expect(abs(clock.nextSecond(in: structure, after: at(1)).timeIntervalSince(at(1.4))) < 1e-6)
+        #expect(abs(clock.nextSecond(in: structure, after: at(1.4)).timeIntervalSince(at(2.4))) < 1e-6)
+    }
+
+    @Test func nextSecondFollowsTheTimeOfDayWhilePaused() {
+        let clock = Clock(structure: structure)
+        #expect(abs(clock.nextSecond(in: structure, after: at(0.25)).timeIntervalSince(at(1))) < 1e-6)
+        #expect(abs(clock.nextSecond(in: structure, after: t0).timeIntervalSince(at(1))) < 1e-6)
+    }
+
     @Test func pauseFreezesTimeAndResumeContinues() {
         var clock = Clock(structure: structure)
         clock.start(in: structure, at: t0)

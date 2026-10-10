@@ -55,6 +55,15 @@ public struct Clock: Codable, Equatable, Sendable {
         elapsedBefore + (runningSince.map { max(0, now.timeIntervalSince($0)) } ?? 0)
     }
 
+    /// When the display next changes: the countdown's next second while the clock runs, the next second of the
+    /// time of day while it's paused. Ticking then keeps every second on screen equally long.
+    public func nextSecond(in structure: Structure, after now: Date) -> Date {
+        let clock = caughtUp(in: structure, at: now)
+        let toward = clock.isRunning ? clock.remaining(at: now) : -now.timeIntervalSince1970
+        let left = toward - toward.rounded(.down)
+        return now.addingTimeInterval(left == 0 ? 1 : left)
+    }
+
     public func snapshot(in structure: Structure, at now: Date) -> ClockSnapshot {
         ClockSnapshot(clock: caughtUp(in: structure, at: now), structure: structure, now: now)
     }

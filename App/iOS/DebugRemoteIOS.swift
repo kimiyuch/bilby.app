@@ -5,10 +5,10 @@ import Foundation
 ///
 ///   xcrun simctl spawn booted notifyutil -p ch.kimiyu.Bilby.debug.toggle
 ///
-/// Commands: toggle, next, previous, plus, minus, entry, knockout, fullscreen, tab.clock, tab.structure,
+/// Commands: toggle, pause, next, previous, plus, minus, entry, knockout, fullscreen, tab.clock, tab.structure,
 /// tab.players, tab.settings. Screenshots come from `xcrun simctl io booted screenshot`.
 enum DebugRemote {
-    static let commands = ["toggle", "next", "previous", "plus", "minus", "entry", "knockout", "fullscreen",
+    static let commands = ["toggle", "pause", "next", "previous", "plus", "minus", "entry", "knockout", "fullscreen",
                            "tab.clock", "tab.structure", "tab.players", "tab.settings", "reset"]
 
     nonisolated(unsafe) private static var handler: ((String) -> Void)?
@@ -17,6 +17,7 @@ enum DebugRemote {
         handler = { command in
             switch command {
             case "toggle": store.toggle()
+            case "pause": if store.isRunning { store.toggle() }
             case "next": store.next()
             case "previous": store.previous()
             case "plus": store.adjust(minutes: 1)
