@@ -2,9 +2,11 @@ import AVFoundation
 import SwiftUI
 
 /// Warning time, the sound for each moment, spoken announcements and volume.
-struct SoundSettings: View {
+struct SoundSettings<Extra: View>: View {
     @Environment(TournamentStore.self) private var store
     @Environment(Alerts.self) private var alerts
+    /// More sections at the end, such as updates on the Mac.
+    @ViewBuilder var extra: () -> Extra
 
     private var settings: Binding<AppSettings> {
         Binding(get: { store.settings }, set: { store.settings = $0 })
@@ -57,6 +59,8 @@ struct SoundSettings: View {
                 .disabled(store.settings.muted)
                 Toggle("Mute", isOn: settings.muted)
             }
+
+            extra()
         }
         .formStyle(.grouped)
     }
@@ -82,4 +86,8 @@ struct SoundSettings: View {
         let region = Locale.current.localizedString(forIdentifier: voice.language) ?? voice.language
         return "\(voice.name)\(quality), \(region)"
     }
+}
+
+extension SoundSettings where Extra == EmptyView {
+    init() { extra = { EmptyView() } }
 }

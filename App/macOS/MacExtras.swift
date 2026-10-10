@@ -22,6 +22,7 @@ struct MenuBarLabel: View {
 }
 
 struct MenuBarContent: View {
+    let updaterModel: UpdaterModel
     @Environment(TournamentStore.self) private var store
     @Environment(\.openWindow) private var openWindow
 
@@ -46,6 +47,7 @@ struct MenuBarContent: View {
             NSApp.activate()
         }
         Divider()
+        CheckForUpdatesButton(model: updaterModel)
         Button("Quit Bilby") { NSApp.terminate(nil) }
             .keyboardShortcut("q")
     }

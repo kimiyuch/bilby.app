@@ -6,6 +6,7 @@ struct BilbyApp: App {
     @State private var store: TournamentStore
     @State private var alerts: Alerts
     #if os(macOS)
+    @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
     private let displayAwake = DisplayAwake()
     #else
     private let extras: IOSExtras
@@ -32,7 +33,12 @@ struct BilbyApp: App {
                 .frame(minWidth: 820, minHeight: 560)
         }
         .defaultSize(width: 1080, height: 720)
-        .commands { ClockCommands(store: store) }
+        .commands {
+            CommandGroup(after: .appInfo) {
+                CheckForUpdatesButton(model: delegate.updaterModel)
+            }
+            ClockCommands(store: store)
+        }
 
         Window("Big Screen", id: "bigscreen") {
             BigScreenView()
@@ -44,14 +50,14 @@ struct BilbyApp: App {
         .windowBackgroundDragBehavior(.enabled)
 
         MenuBarExtra {
-            MenuBarContent()
+            MenuBarContent(updaterModel: delegate.updaterModel)
                 .environment(store)
         } label: {
             MenuBarLabel(store: store)
         }
 
         Settings {
-            SoundSettings()
+            SoundSettings { UpdateSettingsSection(model: delegate.updaterModel) }
                 .environment(store)
                 .environment(alerts)
                 .frame(width: 460)
