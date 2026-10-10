@@ -30,7 +30,7 @@ struct ClockView: View {
             .padding(.horizontal, unit * 5)
             .padding(.vertical, unit * 4)
             .frame(width: size.width, height: size.height)
-            .background(theme.background)
+            .background { theme.background.ignoresSafeArea() }
             .animation(.easeInOut(duration: 0.6), value: theme)
         }
         .environment(\.colorScheme, .dark)
@@ -98,7 +98,7 @@ struct ClockView: View {
         } else {
             VStack(spacing: unit * 0.6) {
                 Text(snapshot.round.blindsText)
-                    .font(.system(size: unit * 10, weight: .semibold))
+                    .font(.system(size: unit * 11.5, weight: .semibold))
                     .monospacedDigit()
                     .foregroundStyle(theme.primary)
                     .lineLimit(1)
@@ -148,7 +148,7 @@ struct ClockView: View {
                                 .tracking(unit * 0.2)
                                 .foregroundStyle(theme.secondary)
                             Text(value)
-                                .font(.system(size: unit * 3.8, weight: .medium))
+                                .font(.system(size: unit * 4.2, weight: .medium))
                                 .monospacedDigit()
                                 .foregroundStyle(theme.primary)
                                 .lineLimit(1)

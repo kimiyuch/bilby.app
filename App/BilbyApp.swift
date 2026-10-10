@@ -5,11 +5,18 @@ import SwiftUI
 struct BilbyApp: App {
     @State private var store: TournamentStore
     @State private var alerts: Alerts
+    #if os(macOS)
+    private let displayAwake = DisplayAwake()
+    #endif
 
     init() {
         let store = TournamentStore()
         _store = State(initialValue: store)
         _alerts = State(initialValue: Alerts(store: store))
+        #if os(macOS)
+        let awake = displayAwake
+        store.observe { awake.set($0.isRunning) }
+        #endif
     }
 
     var body: some Scene {
@@ -21,6 +28,23 @@ struct BilbyApp: App {
                 .frame(minWidth: 820, minHeight: 560)
         }
         .defaultSize(width: 1080, height: 720)
+        .commands { ClockCommands(store: store) }
+
+        Window("Big Screen", id: "bigscreen") {
+            BigScreenView()
+                .environment(store)
+                .frame(minWidth: 480, minHeight: 270)
+        }
+        .windowStyle(.hiddenTitleBar)
+        .defaultSize(width: 960, height: 540)
+        .windowBackgroundDragBehavior(.enabled)
+
+        MenuBarExtra {
+            MenuBarContent()
+                .environment(store)
+        } label: {
+            MenuBarLabel(store: store)
+        }
 
         Settings {
             SoundSettings()
@@ -46,6 +70,7 @@ struct ContentView: View {
     @State private var section = Section.clock
     #if DEBUG && os(macOS)
     @Environment(\.openSettings) private var openSettings
+    @Environment(\.openWindow) private var openWindow
     #endif
 
     var body: some View {
@@ -60,9 +85,9 @@ struct ContentView: View {
         }
         #if DEBUG && os(macOS)
         .task {
-            let openSettings = openSettings
+            let openSettings = openSettings, openWindow = openWindow
             DebugRemote.install(store: store, selectTab: { section = Section(rawValue: $0) ?? section },
-                                openSettings: { openSettings() })
+                                openSettings: { openSettings() }, openWindow: { openWindow(id: $0) })
         }
         #endif
     }
@@ -70,6 +95,10 @@ struct ContentView: View {
 
 /// The clock with its controls underneath.
 struct ClockScreen: View {
+    #if os(macOS)
+    @Environment(\.openWindow) private var openWindow
+    #endif
+
     var body: some View {
         VStack(spacing: 16) {
             LiveClockView()
@@ -77,5 +106,22 @@ struct ClockScreen: View {
             ClockControls()
         }
         .padding(20)
+        #if os(macOS)
+        .toolbar {
+            ToolbarItem {
+                Menu("Big Screen", systemImage: "tv") {
+                    Button("Show in a Window") { openWindow(id: "bigscreen") }
+                    Section("Full Screen On") {
+                        ForEach(Array(BigScreen.screens.enumerated()), id: \.offset) { _, screen in
+                            Button(screen.localizedName) { BigScreen.shared.show(on: screen, openWindow: openWindow) }
+                        }
+                    }
+                } primaryAction: {
+                    openWindow(id: "bigscreen")
+                }
+                .help("Show the clock on its own, for a TV or projector")
+            }
+        }
+        #endif
     }
 }

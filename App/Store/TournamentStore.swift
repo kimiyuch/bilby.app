@@ -9,13 +9,23 @@ final class TournamentStore {
     private(set) var tournament: Tournament
     private(set) var library: [Structure]
     var settings: AppSettings {
-        didSet { if settings != oldValue { persistence.save(settings, to: "settings.json") } }
+        didSet {
+            guard settings != oldValue else { return }
+            persistence.save(settings, to: "settings.json")
+            for observer in observers { observer(self) }
+        }
     }
     /// Advances about once a second, for views that show the time but don't run their own TimelineView.
     private(set) var now = Date.now
 
+    /// Whether the clock is running right now (it stops by itself after the last level).
+    private(set) var isRunning = false
+
     /// Called on the main actor for each clock event as it happens.
     @ObservationIgnored var onEvent: ((ClockEvent) -> Void)?
+    /// Called after anything about the tournament changed, including the clock moving to the next round.
+    @ObservationIgnored private var observers: [(TournamentStore) -> Void] = []
+    @ObservationIgnored private var lastRoundIndex = -1
 
     @ObservationIgnored private let persistence: Persistence
     @ObservationIgnored private var lastTick = Date.now
@@ -26,6 +36,7 @@ final class TournamentStore {
         tournament = persistence.load(Tournament.self, from: "tournament.json") ?? Tournament(structure: Presets.standard)
         library = persistence.load([Structure].self, from: "structures.json") ?? []
         settings = persistence.load(AppSettings.self, from: "settings.json") ?? AppSettings()
+        isRunning = tournament.clock.caughtUp(in: tournament.structure, at: .now).isRunning
         ticker = Task { [weak self] in
             while !Task.isCancelled {
                 try? await Task.sleep(for: .milliseconds(250))
@@ -35,6 +46,12 @@ final class TournamentStore {
     }
 
     var structure: Structure { tournament.structure }
+
+    /// Runs `body` now and after every change to the tournament.
+    func observe(_ body: @escaping (TournamentStore) -> Void) {
+        observers.append(body)
+        body(self)
+    }
 
     func snapshot(at date: Date = .now) -> ClockSnapshot {
         tournament.snapshot(at: date)
@@ -105,11 +122,21 @@ final class TournamentStore {
         tournament = t
         lastTick = date
         persistence.save(tournament, to: "tournament.json")
+        changed(at: date)
+    }
+
+    private func changed(at date: Date) {
+        let clock = tournament.clock.caughtUp(in: tournament.structure, at: date)
+        isRunning = clock.isRunning
+        lastRoundIndex = clock.roundIndex
+        for observer in observers { observer(self) }
     }
 
     private func tick(at date: Date = .now) {
         defer { lastTick = date }
         if Int(date.timeIntervalSinceReferenceDate) != Int(now.timeIntervalSinceReferenceDate) { now = date }
+        let clock = tournament.clock.caughtUp(in: tournament.structure, at: date)
+        if clock.roundIndex != lastRoundIndex || clock.isRunning != isRunning { changed(at: date) }
         guard date > lastTick, let onEvent else { return }
         let due = tournament.clock.upcomingEvents(in: tournament.structure, at: lastTick, warning: settings.warning)
             .prefix { $0.date <= date }

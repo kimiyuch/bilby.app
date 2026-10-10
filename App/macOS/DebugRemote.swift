@@ -10,7 +10,8 @@ enum DebugRemote {
     static let name = Notification.Name("ch.kimiyu.Bilby.debug")
 
     static func install(store: TournamentStore, selectTab: @escaping @MainActor @Sendable (String) -> Void,
-                        openSettings: @escaping @MainActor @Sendable () -> Void) {
+                        openSettings: @escaping @MainActor @Sendable () -> Void,
+                        openWindow: @escaping @MainActor @Sendable (String) -> Void) {
         DistributedNotificationCenter.default().addObserver(forName: name, object: nil, queue: .main) { note in
             let command = note.object as? String ?? ""
             let argument = note.userInfo?["argument"] as? String
@@ -30,6 +31,9 @@ enum DebugRemote {
                 case "knockout": store.updatePrizePool { $0.eliminate() }
                 case "warning": store.settings.warningSeconds = Int(argument ?? "") ?? 60
                 case "settings": openSettings()
+                case "bigscreen": openWindow("bigscreen")
+                case "fullscreen": BigScreen.shared.show(on: NSScreen.screens.first, openWindow: nil)
+                case "windowed": BigScreen.shared.exitFullScreen()
                 case let c where c.hasPrefix("tab:"): selectTab(String(c.dropFirst(4)))
                 default: break
                 }
@@ -40,13 +44,14 @@ enum DebugRemote {
     private static func snapshot(into directory: String) {
         try? FileManager.default.createDirectory(atPath: directory, withIntermediateDirectories: true)
         for (i, window) in NSApp.windows.enumerated() where window.isVisible {
+            guard let number = UInt32(exactly: window.windowNumber) else { continue }
             let name = window.title.isEmpty ? "window-\(i)" : window.title.replacingOccurrences(of: "/", with: "-")
             let url = URL(fileURLWithPath: directory).appending(path: "\(name).png")
             // An app may capture its own windows without screen recording permission. The function is gone
             // from the SDK headers but still in CoreGraphics.
             typealias Capture = @convention(c) (CGRect, UInt32, UInt32, UInt32) -> Unmanaged<CGImage>?
             if let symbol = dlsym(UnsafeMutableRawPointer(bitPattern: -2), "CGWindowListCreateImage"),
-               let image = unsafeBitCast(symbol, to: Capture.self)(.null, 1 << 3, UInt32(window.windowNumber), 1 | 8)?
+               let image = unsafeBitCast(symbol, to: Capture.self)(.null, 1 << 3, number, 1 | 8)?
                 .takeRetainedValue() {
                 try? NSBitmapImageRep(cgImage: image).representation(using: .png, properties: [:])?.write(to: url)
                 continue
