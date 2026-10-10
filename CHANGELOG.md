@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.1 (2026-10-10)
+
+- A new app icon: the bilby now peeks over its hole cards, a pair of aces.
+
 ## 0.1 (2026-10-10)
 
 - First release: a calm, native poker tournament clock for Mac, iPad and iPhone.

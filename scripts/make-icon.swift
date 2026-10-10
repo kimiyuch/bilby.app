@@ -1,4 +1,4 @@
-// Renders the Bilby app icon: a bilby peeking over a poker chip marked BB, on a desert-ochre squircle.
+// Renders the Bilby app icon: a bilby peeking over its hole cards, a pair of aces, on a deep teal squircle.
 // Writes an asset catalog icon set with the macOS sizes and the single 1024 px iOS icon.
 // Usage: swift make-icon.swift <AppIcon.appiconset> [preview.png]
 import AppKit
@@ -14,7 +14,7 @@ func color(_ hex: UInt32, _ alpha: CGFloat = 1) -> NSColor {
 
 let fur = color(0x9AA6B3), furDark = color(0x7C8896), furLight = color(0xD9DEE4)
 let earInside = color(0xE9B7B3), nose = color(0x2B2F35), pink = color(0xD98C93)
-let chipColor = color(0x2F6F86), chipDark = color(0x24576A), chipLight = color(0xF4EFE6)
+let spadeInk = color(0x173544), heartInk = color(0xC9473D)
 
 func oval(_ c: NSPoint, _ rx: CGFloat, _ ry: CGFloat) -> NSBezierPath {
     NSBezierPath(ovalIn: NSRect(x: c.x - rx, y: c.y - ry, width: 2 * rx, height: 2 * ry))
@@ -102,48 +102,33 @@ func bilby() {
     }
 }
 
-/// A poker chip seen from the front, with edge inserts and BB in the middle.
-func chip(center c: NSPoint, radius r: CGFloat) {
-    withShadow(0.28, offset: -12, blur: 24) { fill(oval(c, r, r), chipColor) }
-    // Six edge inserts.
-    NSGraphicsContext.saveGraphicsState()
-    oval(c, r, r).addClip()
-    for i in 0..<6 {
-        let angle = CGFloat(i) * .pi / 3 + .pi / 6
-        let insert = NSBezierPath()
-        let half: CGFloat = 0.2
-        insert.move(to: c)
-        insert.line(to: NSPoint(x: c.x + 2 * r * cos(angle - half), y: c.y + 2 * r * sin(angle - half)))
-        insert.line(to: NSPoint(x: c.x + 2 * r * cos(angle + half), y: c.y + 2 * r * sin(angle + half)))
-        insert.close()
-        fill(insert, chipLight)
-    }
-    NSGraphicsContext.restoreGraphicsState()
-    fill(oval(c, r * 0.78, r * 0.78), chipDark)
-    fill(oval(c, r * 0.72, r * 0.72), chipColor)
-    // Dashed inner ring.
-    let ring = oval(c, r * 0.64, r * 0.64)
-    ring.lineWidth = r * 0.035
-    ring.setLineDash([r * 0.12, r * 0.08], count: 2, phase: 0)
-    chipLight.withAlphaComponent(0.8).setStroke()
-    ring.stroke()
+func symbol(_ text: String, at p: NSPoint, size: CGFloat, _ c: NSColor) {
+    let string = NSAttributedString(string: text, attributes: [.font: NSFont.systemFont(ofSize: size, weight: .bold), .foregroundColor: c])
+    let s = string.size()
+    string.draw(at: NSPoint(x: p.x - s.width / 2, y: p.y - s.height / 2))
+}
 
-    let font = NSFont.systemFont(ofSize: r * 0.62, weight: .heavy)
-    let text = NSAttributedString(string: "BB", attributes: [
-        .font: font, .foregroundColor: chipLight, .kern: -r * 0.02,
-    ])
-    let size = text.size()
-    text.draw(at: NSPoint(x: c.x - size.width / 2, y: c.y - size.height / 2 + r * 0.02))
+/// A playing card centred at `c`, tilted by `tilt` degrees, with the rank and suit in the corner and
+/// optionally a big suit in the middle.
+func card(center c: NSPoint, tilt: CGFloat, rank: String, suit: String, ink: NSColor, pip: Bool) {
+    rotated(tilt, around: c) {
+        let w: CGFloat = 270, h: CGFloat = 378
+        let rect = NSRect(x: c.x - w / 2, y: c.y - h / 2, width: w, height: h)
+        withShadow(0.3, offset: -10, blur: 22) { fill(NSBezierPath(roundedRect: rect, xRadius: 32, yRadius: 32), .white) }
+        symbol(rank, at: NSPoint(x: rect.minX + 48, y: rect.maxY - 54), size: 68, ink)
+        symbol(suit, at: NSPoint(x: rect.minX + 48, y: rect.maxY - 118), size: 52, ink)
+        if pip { symbol(suit, at: NSPoint(x: c.x + 14, y: c.y - 34), size: 170, ink) }
+    }
 }
 
 /// The artwork inside a 1024×1024 canvas. On macOS it sits on the squircle; on iOS the system masks
 /// a full-bleed square, so the background fills the canvas and the artwork is scaled up to match.
 func drawIcon(squircle: Bool) {
-    let background = NSGradient(colors: [color(0xF0C77E), color(0xD08A45)])!
+    let background = NSGradient(colors: [color(0x2F6F86), color(0x173544)])!
     if squircle {
         let body = NSRect(x: 100, y: 100, width: 824, height: 824)
         let shape = NSBezierPath(roundedRect: body, xRadius: 185, yRadius: 185)
-        withShadow(0.3, offset: -10, blur: 24) { fill(shape, color(0xD08A45)) }
+        withShadow(0.3, offset: -10, blur: 24) { fill(shape, color(0x173544)) }
         NSGraphicsContext.saveGraphicsState()
         shape.addClip()
         background.draw(in: body, angle: -90)
@@ -165,21 +150,14 @@ func drawIcon(squircle: Bool) {
 }
 
 func artwork() {
-    // A low dune behind everything.
-    let dune = NSBezierPath()
-    dune.move(to: NSPoint(x: 0, y: 300))
-    dune.curve(to: NSPoint(x: 1024, y: 360), controlPoint1: NSPoint(x: 350, y: 420), controlPoint2: NSPoint(x: 700, y: 260))
-    dune.line(to: NSPoint(x: 1024, y: 0))
-    dune.line(to: NSPoint(x: 0, y: 0))
-    dune.close()
-    fill(dune, color(0xC27A3A, 0.55))
-
     bilby()
-    chip(center: NSPoint(x: 512, y: 335), radius: 205)
-    // Paws over the top edge of the chip.
-    for x: CGFloat in [430, 600] {
-        fill(oval(NSPoint(x: x, y: 548), 46, 32), fur)
-        fill(oval(NSPoint(x: x, y: 541), 34, 20), furDark)
+    // The hole cards: the ace of spades behind, the ace of hearts in front.
+    card(center: NSPoint(x: 440, y: 352), tilt: 13, rank: "A", suit: "♠", ink: spadeInk, pip: false)
+    card(center: NSPoint(x: 592, y: 340), tilt: -8, rank: "A", suit: "♥", ink: heartInk, pip: true)
+    // Paws over the top of the front card.
+    for x: CGFloat in [590, 700] {
+        fill(oval(NSPoint(x: x, y: 532), 44, 30), fur)
+        fill(oval(NSPoint(x: x, y: 525), 32, 18), furDark)
     }
 }
 
