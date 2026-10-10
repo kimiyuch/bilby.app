@@ -80,7 +80,9 @@ public struct StructureGenerator: Sendable {
             if sinceBreak >= breakEvery {
                 // Retire chips that are now tiny next to the blinds.
                 var retired: [Int] = []
-                while smallestChip + 1 < denominations.count, Double(denominations[smallestChip + 1] * 5) <= target {
+                // A chip goes once the big blind is 20 of it and 5 of the next one.
+                while smallestChip + 1 < denominations.count,
+                      Double(max(denominations[smallestChip] * 20, denominations[smallestChip + 1] * 5)) <= target {
                     retired.append(denominations[smallestChip])
                     smallestChip += 1
                 }

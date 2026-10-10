@@ -1,0 +1,70 @@
+# Generates Bilby.xcodeproj: xcodegen generate (or let build.sh do it).
+name: Bilby
+options:
+  bundleIdPrefix: ch.kimiyu
+  deploymentTarget:
+    macOS: "26.0"
+    iOS: "26.0"
+  createIntermediateGroups: true
+  developmentLanguage: en
+
+packages:
+  BilbyKit:
+    path: BilbyKit
+
+configFiles:
+  Debug: Config/Bilby.xcconfig
+  Release: Config/Bilby.xcconfig
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    SWIFT_APPROACHABLE_CONCURRENCY: YES
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+    DEAD_CODE_STRIPPING: YES
+
+targets:
+  Bilby:
+    type: application
+    supportedDestinations: [macOS, iOS]
+    sources:
+      - path: App
+    dependencies:
+      - package: BilbyKit
+      - framework: vendor/sparkle-2.10.0/Sparkle.framework
+        embed: true
+        destinationFilters: [macOS]
+    settings:
+      base:
+        PRODUCT_NAME: Bilby
+        # release.sh bumps these.
+        MARKETING_VERSION: "0.1"
+        CURRENT_PROJECT_VERSION: "1"
+        PRODUCT_BUNDLE_IDENTIFIER: ch.kimiyu.Bilby
+        INFOPLIST_FILE: Resources/Info.plist
+        GENERATE_INFOPLIST_FILE: YES
+        SWIFT_DEFAULT_ACTOR_ISOLATION: MainActor
+        TARGETED_DEVICE_FAMILY: "1,2"
+        SUPPORTS_MACCATALYST: NO
+        SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD: NO
+        CODE_SIGN_STYLE: Automatic
+        "CODE_SIGN_IDENTITY[sdk=macosx*]": "-"
+        "ARCHS[sdk=macosx*]": arm64
+        "FRAMEWORK_SEARCH_PATHS[sdk=macosx*]": $(PROJECT_DIR)/vendor/sparkle-2.10.0
+        "LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]": "@executable_path/../Frameworks"
+        "INFOPLIST_KEY_NSPrincipalClass[sdk=macosx*]": NSApplication
+        "INFOPLIST_KEY_LSApplicationCategoryType": public.app-category.utilities
+        "INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphone*]": YES
+        "INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphone*]": YES
+        "INFOPLIST_KEY_UISupportedInterfaceOrientations[sdk=iphone*]": "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortraitUpsideDown"
+        "INFOPLIST_KEY_UIStatusBarStyle[sdk=iphone*]": UIStatusBarStyleLightContent
+
+schemes:
+  Bilby:
+    build:
+      targets:
+        Bilby: all
+    run:
+      config: Debug
+    archive:
+      config: Release

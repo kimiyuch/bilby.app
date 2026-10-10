@@ -14,3 +14,4 @@ DerivedData/
 
 # Private session notes (not for the public repository)
 /SESSION.md
+/Config/Signing.local.xcconfig

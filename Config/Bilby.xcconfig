@@ -1,0 +1,6 @@
+// Shared build settings. To run Bilby on your own iPhone or iPad, create Config/Signing.local.xcconfig
+// (gitignored) with your team ID from Xcode → Settings → Accounts:
+//
+//   DEVELOPMENT_TEAM = ABCDE12345
+//
+#include? "Signing.local.xcconfig"

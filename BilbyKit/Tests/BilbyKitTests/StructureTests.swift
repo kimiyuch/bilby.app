@@ -81,3 +81,28 @@ import Testing
         #expect(Announcement.warning(s.rounds[4], remaining: 120) == "2 minutes left in the break.")
     }
 }
+
+@Suite struct TimeFormatTests {
+    @Test func formats() {
+        #expect(TimeFormat.countdown(600) == "10:00")
+        #expect(TimeFormat.countdown(599.2) == "10:00")
+        #expect(TimeFormat.countdown(0.3) == "0:01")
+        #expect(TimeFormat.countdown(0) == "0:00")
+        #expect(TimeFormat.countdown(3900) == "1:05:00")
+        #expect(TimeFormat.elapsed(8045.9) == "2:14:05")
+        #expect(TimeFormat.duration(minutes: 65) == "1 h 5 min")
+        #expect(TimeFormat.duration(minutes: 120) == "2 h")
+        #expect(TimeFormat.duration(minutes: 45) == "45 min")
+    }
+}
+
+@Suite struct SuggestedLevelTests {
+    @Test func followsThePreviousLevel() {
+        let s = Presets.standard
+        let after = s.suggestedLevel(after: .level(400, 800, ante: 800, minutes: 20))
+        #expect(after.bigBlind == 1200 && after.smallBlind == 600 && after.ante == 1200 && after.minutes == 20)
+        let everyone = s.suggestedLevel(after: .level(100, 200, ante: 25, style: .everyone, minutes: 15))
+        #expect(everyone.bigBlind == 300 && everyone.ante == 50 && everyone.anteStyle == .everyone)
+        #expect(s.suggestedLevel(after: nil).bigBlind == 50)
+    }
+}

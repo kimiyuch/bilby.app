@@ -160,3 +160,19 @@ extension Structure {
         return Structure(name: file.name, rounds: rounds)
     }
 }
+
+extension Structure {
+    /// A sensible level to follow `previous`: blinds up by about half, same length and ante style.
+    public func suggestedLevel(after previous: Round?) -> Round {
+        guard let previous, previous.bigBlind > 0 else { return .level(25, 50, minutes: 20) }
+        let smallest = rounds.first { !$0.isBreak && $0.smallBlind > 0 }?.smallBlind ?? 1
+        let bb = StructureGenerator.niceBlind(near: Double(previous.bigBlind) * 1.5, above: previous.bigBlind,
+                                              unit: smallest * 2)
+        var ante = 0
+        if previous.ante > 0 {
+            let scaled = Double(previous.ante * bb) / Double(previous.bigBlind) / Double(smallest)
+            ante = previous.anteStyle == .bigBlind ? bb : max(smallest, Int(scaled.rounded()) * smallest)
+        }
+        return .level(bb / 2, bb, ante: ante, style: previous.anteStyle, minutes: previous.minutes)
+    }
+}
