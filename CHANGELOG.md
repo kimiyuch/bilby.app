@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1 (unreleased)
+## 0.1 (2026-10-10)
 
 - First release: a calm, native poker tournament clock for Mac, iPad and iPhone.
 - A big, readable clock with the level, blinds and ante, countdown, progress, next level, next break and
