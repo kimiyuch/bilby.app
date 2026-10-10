@@ -18,6 +18,9 @@ enum DebugRemote {
             MainActor.assumeIsolated {
                 switch command {
                 case "snapshot": snapshot(into: argument ?? NSTemporaryDirectory())
+                case "activate":
+                    NSApp.activate()
+                    NSApp.windows.first { $0.isVisible && $0.canBecomeMain }?.makeKeyAndOrderFront(nil)
                 case "toggle": store.toggle()
                 case "next": store.next()
                 case "previous": store.previous()

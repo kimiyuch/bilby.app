@@ -16,6 +16,9 @@ struct ClockTheme: Equatable {
     static let pause = ClockTheme(background: Color(red: 0.035, green: 0.13, blue: 0.125),
                                   accent: Color(red: 0.39, green: 0.80, blue: 0.72))
 
+    /// The poker chip petrol from the app icon, as on the website: the start/pause button.
+    static let chip = Color(red: 0.184, green: 0.435, blue: 0.525)
+
     static func of(_ s: ClockSnapshot, warning: TimeInterval) -> ClockTheme {
         if s.isBreak { return .pause }
         if s.hasStarted, !s.isFinished, warning > 0, s.remaining <= warning { return .ending }
@@ -26,6 +29,16 @@ struct ClockTheme: Equatable {
 extension Int {
     /// Chip amounts with the locale's grouping, e.g. 1’500.
     var chips: String { formatted(.number) }
+
+    /// Short chip amounts for tight spaces: 800, 1k, 1.5k, 11.1k, 100k, 1.2M. Rounds down, so 1,999 reads 1.9k.
+    var compactChips: String {
+        func short(_ value: Double, _ suffix: String) -> String {
+            ((value * 10).rounded(.down) / 10).formatted(.number.precision(.fractionLength(0...1))) + suffix
+        }
+        if abs(self) >= 1_000_000 { return short(Double(self) / 1_000_000, "M") }
+        if abs(self) >= 1_000 { return short(Double(self) / 1_000, "k") }
+        return formatted(.number)
+    }
 }
 
 extension Round {
@@ -39,5 +52,11 @@ extension Round {
     /// "200 / 400 · 400", for one-line summaries.
     var shortText: String {
         ante > 0 ? "\(blindsText) · \(ante.chips)" : blindsText
+    }
+
+    /// "200 / 400 · 400" with short amounts: "1k / 2k · 2k".
+    var compactText: String {
+        let blinds = "\(smallBlind.compactChips) / \(bigBlind.compactChips)"
+        return ante > 0 ? "\(blinds) · \(ante.compactChips)" : blinds
     }
 }

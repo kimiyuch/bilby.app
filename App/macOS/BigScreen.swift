@@ -88,23 +88,4 @@ struct WindowReader: NSViewRepresentable {
         if let window = view.window { found(window) }
     }
 }
-
-/// Space, arrows and M on windows that don't show the control buttons.
-struct ClockShortcuts: View {
-    @Environment(TournamentStore.self) private var store
-
-    var body: some View {
-        ZStack {
-            Button("", action: store.toggle).keyboardShortcut(.space, modifiers: [])
-            Button("", action: store.next).keyboardShortcut(.rightArrow, modifiers: [])
-            Button("", action: store.previous).keyboardShortcut(.leftArrow, modifiers: [])
-            Button("") { store.adjust(minutes: 1) }.keyboardShortcut(.upArrow, modifiers: [])
-            Button("") { store.adjust(minutes: -1) }.keyboardShortcut(.downArrow, modifiers: [])
-            Button("") { store.settings.muted.toggle() }.keyboardShortcut("m", modifiers: [])
-        }
-        .opacity(0)
-        .frame(width: 0, height: 0)
-        .accessibilityHidden(true)
-    }
-}
 #endif

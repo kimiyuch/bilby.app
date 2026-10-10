@@ -16,7 +16,10 @@ struct FullScreenClock: View {
             .overlay(alignment: .bottom) {
                 if showsControls {
                     VStack(spacing: 12) {
-                        ClockControls()
+                        HStack(spacing: 12) {
+                            ClockControls()
+                            ClockMenu()
+                        }
                         Button("Done", systemImage: "arrow.down.right.and.arrow.up.left") { dismiss() }
                             .buttonStyle(.glass)
                     }
@@ -25,6 +28,7 @@ struct FullScreenClock: View {
                     .onTapGesture { reveal() }
                 }
             }
+            .background(ClockShortcuts())
             .statusBarHidden()
             .persistentSystemOverlays(.hidden)
             .preferredColorScheme(.dark)

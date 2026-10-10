@@ -113,24 +113,36 @@ struct ContentView: View {
     }
 }
 
-/// The clock with its controls underneath.
+/// The clock and its control strip, as one card like a media player: the structure being played on the left,
+/// previous, start/pause and next in the middle, and a menu with the rest on the right. Same as the browser version.
 struct ClockScreen: View {
+    @Environment(TournamentStore.self) private var store
     #if os(macOS)
     @Environment(\.openWindow) private var openWindow
     #else
+    @Environment(\.horizontalSizeClass) private var sizeClass
     @State private var fullScreen = false
     #endif
 
     var body: some View {
-        VStack(spacing: 16) {
-            LiveClockView()
-                .clipShape(.rect(cornerRadius: 18))
+        VStack(spacing: 0) {
+            LiveClockView(fullScreen: showFullScreen)
                 #if os(iOS)
                 .onTapGesture { fullScreen = true }
                 .accessibilityAction(named: "Full Screen") { fullScreen = true }
                 #endif
-            ClockControls()
+            HStack(spacing: 16) {
+                playing.frame(maxWidth: .infinity, alignment: .leading)
+                ClockControls()
+                ClockMenu().frame(maxWidth: .infinity, alignment: .trailing)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
         }
+        .background(.background.secondary)
+        .clipShape(.rect(cornerRadius: 18))
+        .overlay { RoundedRectangle(cornerRadius: 18).strokeBorder(.separator) }
+        .background(ClockShortcuts())
         #if os(macOS)
         .padding(20)
         #else
@@ -155,6 +167,35 @@ struct ClockScreen: View {
                 .help("Show the clock on its own, for a TV or projector")
             }
         }
+        #endif
+    }
+}
+
+extension ClockScreen {
+    /// "Playing" and the structure's name. Left out on a narrow iPhone, where the controls need the room.
+    @ViewBuilder
+    fileprivate var playing: some View {
+        #if os(iOS)
+        // An empty spacer keeps the controls centred.
+        if sizeClass != .compact { playingLabel } else { Color.clear.frame(height: 1) }
+        #else
+        playingLabel
+        #endif
+    }
+
+    private var playingLabel: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("Playing").font(.caption).foregroundStyle(.secondary)
+            Text(store.structure.name).font(.callout.weight(.medium)).lineLimit(1)
+        }
+    }
+
+    /// The button in the corner of the clock: full screen on iPhone and iPad, the big screen on the Mac.
+    fileprivate func showFullScreen() {
+        #if os(macOS)
+        BigScreen.shared.show(on: nil, openWindow: openWindow)
+        #else
+        fullScreen = true
         #endif
     }
 }

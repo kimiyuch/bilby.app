@@ -249,6 +249,19 @@ enum Money {
         amount.formatted(.currency(code: currency).precision(.fractionLength(0...2)))
     }
 
+    /// The currency and the number apart, so the clock can put the currency first and set it smaller,
+    /// whatever order the locale uses: ("CHF", "1’250").
+    static func parts(_ amount: Decimal, _ currency: String) -> (currency: String, number: String) {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .currency
+        formatter.currencyCode = currency
+        let symbol = formatter.currencySymbol ?? currency
+        let number = format(amount, currency)
+            .replacingOccurrences(of: symbol, with: "")
+            .trimmingCharacters(in: .whitespaces.union(CharacterSet(charactersIn: "\u{00A0}\u{202F}")))
+        return (symbol, number)
+    }
+
     /// "1st", "2nd", "3rd", in English like the rest of the app.
     static func place(_ n: Int) -> String {
         let formatter = NumberFormatter()

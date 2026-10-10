@@ -1,84 +1,89 @@
 import BilbyKit
 import SwiftUI
 
-/// Start/pause, next/previous, ±1 minute and restart. Space and the arrow keys work while these are on screen.
+/// Previous, start/pause and next, like a media player. The rest is in `ClockMenu`.
 struct ClockControls: View {
+    @Environment(TournamentStore.self) private var store
+
+    var body: some View {
+        HStack(spacing: 12) {
+            button("Previous Level", "backward.fill", size: 26, action: store.previous)
+                .help("Previous level (←)")
+            button(store.isRunning ? "Pause" : "Start", store.isRunning ? "pause.fill" : "play.fill", size: 40,
+                   action: store.toggle)
+                .buttonStyle(.glassProminent)
+                .tint(ClockTheme.chip)
+                .help("Start or pause (space)")
+            button("Next Level", "forward.fill", size: 26, action: store.next)
+                .help("Next level (→)")
+        }
+        .buttonStyle(.glass)
+        .buttonBorderShape(.circle)
+    }
+
+    /// A round button as big as the browser version's: the icon's frame sets the size of the glass around it.
+    private func button(_ title: String, _ icon: String, size: CGFloat, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: icon)
+                .font(.system(size: size * 0.42, weight: .semibold))
+                .frame(width: size, height: size)
+        }
+        .accessibilityLabel(title)
+    }
+}
+
+/// The clock's less common controls: a minute more or less, restart the level, mute and reset.
+struct ClockMenu: View {
     @Environment(TournamentStore.self) private var store
     @State private var confirmingReset = false
 
     var body: some View {
-        // One row where it fits; on a narrow iPhone the secondary buttons move to a second row.
-        ViewThatFits(in: .horizontal) {
-            HStack(spacing: 12) {
-                previous; restart; minus; playPause; plus; reset; next; mute.padding(.leading, 12)
+        Menu {
+            Button("Add a Minute (↑)", systemImage: "plus") { store.adjust(minutes: 1) }
+            Button("Take a Minute Off (↓)", systemImage: "minus") { store.adjust(minutes: -1) }
+            Button("Restart This Level", systemImage: "arrow.counterclockwise", action: store.restartRound)
+            Button(store.settings.muted ? "Turn Sounds On (M)" : "Mute (M)",
+                   systemImage: store.settings.muted ? "speaker.wave.2" : "speaker.slash") {
+                store.settings.muted.toggle()
             }
-            VStack(spacing: 10) {
-                HStack(spacing: 16) { previous; playPause; next }
-                HStack(spacing: 10) { restart; minus; plus; reset; mute }
-            }
+            Divider()
+            Button("Reset Clock…", systemImage: "stop", role: .destructive) { confirmingReset = true }
+                .disabled(!store.tournament.clock.hasStarted)
+        } label: {
+            // Muted shows here, so it isn't forgotten.
+            Image(systemName: store.settings.muted ? "speaker.slash.fill" : "ellipsis")
+                .font(.system(size: 13, weight: .semibold))
+                .frame(width: 26, height: 26)
+                .accessibilityLabel("More")
         }
+        .menuIndicator(.hidden)
         .buttonStyle(.glass)
-        .controlSize(.large)
-        .labelStyle(.iconOnly)
+        .buttonBorderShape(.circle)
+        .help(store.settings.muted ? "More (sounds are off)" : "More")
         .confirmationDialog("Reset the clock?", isPresented: $confirmingReset) {
             Button("Reset", role: .destructive, action: store.resetClock)
         } message: {
             Text("The clock goes back to level 1 and stops.")
         }
     }
+}
 
-    private var running: Bool { store.isRunning }
+/// Space, the arrow keys and M, wherever the clock is on screen. Invisible buttons, so they work without a menu
+/// item and on an iPad keyboard too.
+struct ClockShortcuts: View {
+    @Environment(TournamentStore.self) private var store
 
-    private var previous: some View {
-        Button("Previous Level", systemImage: "backward.end.fill", action: store.previous)
-            .keyboardShortcut(.leftArrow, modifiers: [])
-            .help("Previous level (←)")
-    }
-
-    private var restart: some View {
-        Button("Restart Level", systemImage: "arrow.counterclockwise", action: store.restartRound)
-            .help("Start this level again")
-    }
-
-    private var minus: some View {
-        Button { store.adjust(minutes: -1) } label: { Text("−1 min").fixedSize() }
-            .keyboardShortcut(.downArrow, modifiers: [])
-            .help("Take a minute off (↓)")
-    }
-
-    private var playPause: some View {
-        Button(running ? "Pause" : "Start", systemImage: running ? "pause.fill" : "play.fill", action: store.toggle)
-            .keyboardShortcut(.space, modifiers: [])
-            .buttonStyle(.glassProminent)
-            .controlSize(.extraLarge)
-            .frame(minWidth: 96)
-            .help("Start or pause (space)")
-    }
-
-    private var plus: some View {
-        Button { store.adjust(minutes: 1) } label: { Text("+1 min").fixedSize() }
-            .keyboardShortcut(.upArrow, modifiers: [])
-            .help("Add a minute (↑)")
-    }
-
-    private var reset: some View {
-        Button("Reset Clock", systemImage: "stop.fill") { confirmingReset = true }
-            .help("Back to level 1, stopped")
-            .disabled(!store.tournament.clock.hasStarted)
-    }
-
-    private var next: some View {
-        Button("Next Level", systemImage: "forward.end.fill", action: store.next)
-            .keyboardShortcut(.rightArrow, modifiers: [])
-            .help("Next level (→)")
-    }
-
-    private var mute: some View {
-        Button(store.settings.muted ? "Unmute" : "Mute",
-               systemImage: store.settings.muted ? "speaker.slash.fill" : "speaker.wave.2.fill") {
-            store.settings.muted.toggle()
+    var body: some View {
+        ZStack {
+            Button("", action: store.toggle).keyboardShortcut(.space, modifiers: [])
+            Button("", action: store.next).keyboardShortcut(.rightArrow, modifiers: [])
+            Button("", action: store.previous).keyboardShortcut(.leftArrow, modifiers: [])
+            Button("") { store.adjust(minutes: 1) }.keyboardShortcut(.upArrow, modifiers: [])
+            Button("") { store.adjust(minutes: -1) }.keyboardShortcut(.downArrow, modifiers: [])
+            Button("") { store.settings.muted.toggle() }.keyboardShortcut("m", modifiers: [])
         }
-        .keyboardShortcut("m", modifiers: [])
-        .help(store.settings.muted ? "Sounds are off (M)" : "Sounds are on (M)")
+        .opacity(0)
+        .frame(width: 0, height: 0)
+        .accessibilityHidden(true)
     }
 }
