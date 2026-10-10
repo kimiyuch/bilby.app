@@ -11,6 +11,8 @@
 
 <p align="center">
   <a href="https://github.com/kimiyuch/bilby.app/releases/latest/download/Bilby.dmg"><b>Download Bilby for Mac</b></a>
+  ·
+  <a href="https://bilby.kimiyu.ch">Website</a>
 </p>
 
 ---
