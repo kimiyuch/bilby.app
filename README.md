@@ -80,6 +80,14 @@ This bumps the version in `project.yml`, builds the app and DMG, signs the updat
 
 The signing key lives in the macOS Keychain (account `bilby`). Export it with `vendor/sparkle-2.10.0/bin/generate_keys --account bilby -x sparkle-private-key.txt` (that filename is gitignored) and keep a copy somewhere safe, like a password manager. Without it you can't publish updates to existing installs. To restore it on a new Mac, run `generate_keys --account bilby -f sparkle-private-key.txt`.
 
+## Download numbers
+
+```sh
+./scripts/stats.sh
+```
+
+Shows how often Bilby was installed and updated, summed over all GitHub releases, with a rough count of active installs (from Sparkle's daily update checks). Each run is logged to `stats.log`, so the estimate gets better over time.
+
 ## How it's built
 
 | Part | |
